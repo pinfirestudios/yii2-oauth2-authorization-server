@@ -6,6 +6,7 @@ class m140501_075311_add_oauth2_server extends \yii\db\Migration
       "CURRENT_TIMESTAMP"=>[
             'oci'=>'CURRENT_TIMESTAMP',
             'mysql'=>'CURRENT_TIMESTAMP',
+            'pgsql'=>'CURRENT_TIMESTAMP',
             'default'=>'now'
           ]
     ];
