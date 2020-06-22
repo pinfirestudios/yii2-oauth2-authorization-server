@@ -50,6 +50,11 @@ class Module extends \yii\base\Module
     public $grantTypes = [];
 
     /**
+     * @var array server options
+     */
+    public $options = [];
+
+    /**
      * @var string name of access token parameter
      */
     public $tokenParamName;
@@ -62,7 +67,6 @@ class Module extends \yii\base\Module
      * @var bool whether to use JWT tokens
      */
     public $useJwtToken = false;//ADDED
-
     /**
      * @inheritdoc
      */
@@ -88,7 +92,7 @@ class Module extends \yii\base\Module
             if($this->useJwtToken)
             {
                 if(!array_key_exists('access_token', $this->storageMap) || !array_key_exists('public_key', $this->storageMap)) {
-                        throw new \yii\base\InvalidConfigException('access_token and public_key must be set or set useJwtToken to false');
+                    throw new \yii\base\InvalidConfigException('access_token and public_key must be set or set useJwtToken to false');
                 }
                 //define dependencies when JWT is used instead of normal token
                 \Yii::$container->clear('public_key'); //remove old definition
@@ -105,7 +109,8 @@ class Module extends \yii\base\Module
 
             $grantTypes = [];
             foreach($this->grantTypes as $name => $options) {
-                if(!isset($storages[$name]) || empty($options['class'])) {
+                $storageName = !empty($options['storageName']) ? $options['storageName'] : $name;
+                if(!isset($storages[$storageName]) || empty($options['class'])) {
                     throw new \yii\base\InvalidConfigException('Invalid grant types configuration.');
                 }
 
@@ -113,7 +118,7 @@ class Module extends \yii\base\Module
                 unset($options['class']);
 
                 $reflection = new \ReflectionClass($class);
-                $config = array_merge([0 => $storages[$name]], [$options]);
+                $config = array_merge([0 => $storages[$storageName]], [$options]);
 
                 $instance = $reflection->newInstanceArgs($config);
                 $grantTypes[$name] = $instance;
@@ -122,12 +127,12 @@ class Module extends \yii\base\Module
             $server = \Yii::$container->get(Server::className(), [
                 $this,
                 $storages,
-                [
+                array_merge(array_filter([
                     'use_jwt_access_tokens' => $this->useJwtToken,//ADDED
                     'token_param_name' => $this->tokenParamName,
                     'access_lifetime' => $this->tokenAccessLifetime,
                     /** add more ... */
-                ],
+                ]), $this->options),
                 $grantTypes
             ]);
 
@@ -147,7 +152,7 @@ class Module extends \yii\base\Module
 
     public function getResponse()
     {
-        if(!ArrayHelper::keyExists('request', $this->getComponents())) {
+        if(!ArrayHelper::keyExists('response', $this->getComponents())) {
             $this->set('response', new Response());
         }
         return $this->get('response');
